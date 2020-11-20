@@ -32,14 +32,15 @@ def check_stream():
 
     return_code = encode_process.returncode
 
+    time_tag = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     if return_code > 0:
-        print(
-            f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [ERROR] Stream is down!!!!")
-        post_message_to_slack(
-            f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Stream is down!")
+        print(f"[{time_tag}] [ERROR] Stream is down!!!!")
+        res = post_message_to_slack(f"[{time_tag}] Stream is down!")
+        if not res["ok"]:
+            print("FAILED TO SEND TO SLACK!!!!")
+            print("REASON: ", res["error"])
     else:
-        print(
-            f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [OK] Stream is still up")
+        print(f"[{time_tag}] [OK] Stream is still up")
 
 
 def post_message_to_slack(text, blocks=None):
