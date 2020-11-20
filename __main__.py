@@ -37,8 +37,8 @@ def check_stream():
         print(f"[{time_tag}] [ERROR] Stream is down!!!!")
         res = post_message_to_slack(f"[{time_tag}] Stream is down!")
         if not res["ok"]:
-            print("FAILED TO SEND TO SLACK!!!!")
-            print("REASON: ", res["error"])
+            print("  FAILED TO SEND TO SLACK!!!!")
+            print("  REASON: ", res["error"])
     else:
         print(f"[{time_tag}] [OK] Stream is still up")
 
