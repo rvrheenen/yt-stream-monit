@@ -6,12 +6,29 @@ from datetime import datetime
 import requests
 import json
 import time
+from typing import List, Tuple
 
 
 def main():
+    fail_limit, sleep_time = get_runtime_vars()
+    results = [0] * int(fail_limit)
     while True:
-        check_stream()
-        time.sleep(5)
+        return_code = check_stream()
+        results = process_results(results, return_code)
+
+        time.sleep(sleep_time)
+
+
+def get_runtime_vars() -> Tuple[int, int]:
+    fail_limit = int(os.getenv("AMOUNT_OF_FAILS_BEFORE_NOTIFICATION"))
+    if fail_limit == None:
+        fail_limit = 1
+
+    sleep_time = int(os.getenv("SLEEP_TIME"))
+    if sleep_time == None:
+        sleep_time = 5
+
+    return fail_limit, sleep_time
 
 
 def check_stream():
@@ -32,18 +49,34 @@ def check_stream():
 
     return_code = encode_process.returncode
 
+    return return_code
+
+
+def process_results(results: List[int], return_code: int) -> List[int]:
+    results.append(return_code)
+    results = results[1:]
+
     time_tag = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    if return_code > 0:
+    if all(results):
         print(f"[{time_tag}] [ERROR] Stream is down!!!!")
         res = post_message_to_slack(f"[{time_tag}] Stream is down!")
         if not res["ok"]:
             print("  FAILED TO SEND TO SLACK!!!!")
             print("  REASON: ", res["error"])
+        else:
+            print("  SENT TO SLACK!")
+    elif any(results) and results[-1]:
+        fails = len(results) - results.count(0)
+        print(
+            f"[{time_tag}] [WARNING] {fails}/{len(results)} of recent checks failed."
+        )
     else:
         print(f"[{time_tag}] [OK] Stream is still up")
 
+    return results
 
-def post_message_to_slack(text, blocks=None):
+
+def post_message_to_slack(text: str, blocks: List = None):
     return requests.post('https://slack.com/api/chat.postMessage', {
         'token': os.getenv("SLACK_TOKEN"),
         'channel': os.getenv("SLACK_CHANNEL"),
